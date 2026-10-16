@@ -4,7 +4,7 @@
 export const normalizar = (texto) =>
   String(texto ?? "")
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
 
@@ -51,14 +51,35 @@ function mapearProducto(fila) {
   };
 }
 
-export async function obtenerProductos() {
+// Copia en memoria del catálogo: evita esperar a Apps Script en cada consulta
+// y sirve de respaldo si Google tarda demasiado en responder.
+let cache = { productos: null, fecha: 0 };
+const VIGENCIA_CACHE_MS = 5 * 60 * 1000;
+
+export async function obtenerProductos({ usarCache = true, tiempoMs = 7000 } = {}) {
+  if (usarCache && cache.productos && Date.now() - cache.fecha < VIGENCIA_CACHE_MS) {
+    return cache.productos;
+  }
   const { url, token } = configuracion();
-  const res = await fetch(`${url}?accion=productos&token=${encodeURIComponent(token)}`, {
-    redirect: "follow",
-    signal: AbortSignal.timeout(8000),
-  });
-  const data = await leerJSON(res);
-  return (data.filas ?? []).map(mapearProducto).filter((p) => p.nombre);
+  try {
+    const res = await fetch(`${url}?accion=productos&token=${encodeURIComponent(token)}`, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(tiempoMs),
+    });
+    const data = await leerJSON(res);
+    const productos = (data.filas ?? []).map(mapearProducto).filter((p) => p.nombre);
+    cache = { productos, fecha: Date.now() };
+    return productos;
+  } catch (error) {
+    if (cache.productos) {
+      console.warn("Google Sheets no respondió a tiempo; se usa la última copia del catálogo.", error.message);
+      return cache.productos;
+    }
+    if (error.name === "TimeoutError") {
+      throw new Error("Google Sheets (Apps Script) tardó demasiado en responder.");
+    }
+    throw error;
+  }
 }
 
 export async function obtenerEstadisticas() {

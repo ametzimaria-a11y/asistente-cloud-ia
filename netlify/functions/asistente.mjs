@@ -50,7 +50,10 @@ function construirPrompt({ pregunta, productos, candidatos, filtros }) {
   };
 }
 
+const LIMITE_TOTAL_MS = 9500; // Netlify corta la función a los 10 s
+
 export default async (req, context) => {
+  const inicio = Date.now();
   if (req.method !== "POST") return error("Usa el método POST para consultar al asistente.", 405);
 
   // 1. Recibir la pregunta
@@ -74,10 +77,14 @@ export default async (req, context) => {
   // 2. Obtener los productos de Google Sheets
   let productos;
   try {
-    productos = await obtenerProductos();
+    productos = await obtenerProductos({ tiempoMs: 6500 });
   } catch (e) {
     console.error("Google Sheets:", e);
-    return error("No fue posible consultar el catálogo en Google Sheets.", 502, e.message);
+    return error(
+      "No fue posible consultar el catálogo en Google Sheets. Intenta de nuevo en unos segundos.",
+      502,
+      e.message
+    );
   }
   if (!productos.length) {
     return Response.json({
@@ -94,7 +101,8 @@ export default async (req, context) => {
   // 4. Construir el prompt y 5. enviarlo al servicio de IA
   let resultado;
   try {
-    resultado = await generarRespuesta(construirPrompt({ pregunta, productos, candidatos, filtros }));
+    const tiempoRestante = Math.max(LIMITE_TOTAL_MS - (Date.now() - inicio), 2500);
+    resultado = await generarRespuesta(construirPrompt({ pregunta, productos, candidatos, filtros }), tiempoRestante);
   } catch (e) {
     console.error("Servicio de IA:", e);
     const tiempo = e.name === "TimeoutError" || e.name === "AbortError";

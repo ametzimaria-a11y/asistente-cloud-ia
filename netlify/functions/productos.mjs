@@ -4,7 +4,7 @@ import { obtenerProductos } from "../lib/sheets.mjs";
 
 export default async () => {
   try {
-    const productos = await obtenerProductos();
+    const productos = await obtenerProductos({ usarCache: false, tiempoMs: 9000 });
     return Response.json({
       conexion: "OK",
       fuente: "Google Sheets",
