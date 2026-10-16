@@ -87,7 +87,7 @@ export default function App() {
       .catch((e) => setErrorCatalogo(e.message));
     cargarEstadisticas();
     // Despertar la función del asistente para que la primera consulta sea rápida
-    fetch(`${API}/asistente`).catch(() => {});
+    fetch(ASISTENTE).catch(() => {});
   }, []);
 
   const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))];
@@ -119,10 +119,10 @@ export default function App() {
     try {
       let data;
       try {
-        data = await pedirJSON(`${API}/ASISTENTE`, solicitud);
+        data = await pedirJSON(ASISTENTE, solicitud);
       } catch (err) {
         // Si el servidor estaba "dormido" (arranque en frío), se reintenta una vez
-        if (err.status >= 500) data = await pedirJSON(`${API}/asistente`, solicitud);
+        if (err.status >= 500) data = await pedirJSON(ASISTENTE, solicitud);
         else throw err;
       }
 
