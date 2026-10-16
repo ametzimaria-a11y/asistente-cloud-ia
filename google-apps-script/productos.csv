@@ -1,0 +1,9 @@
+ID,Producto,Categoria,Precio,RAM,Almacenamiento
+1,Laptop Pro,Laptop,18500,16 GB,512 GB
+2,Laptop Gamer,Laptop,24000,32 GB,1 TB
+3,Laptop Básica,Laptop,12000,8 GB,256 GB
+4,PC Desarrollo,PC,19500,16 GB,1 TB
+5,Mini PC,PC,9500,16 GB,512 GB
+6,Workstation,PC,32000,32 GB,2 TB
+7,SSD 1TB,Almacenamiento,1800,–,1 TB
+8,SSD 512GB,Almacenamiento,950,–,512 GB
