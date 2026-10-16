@@ -1,0 +1,14 @@
+[build]
+  command = "npm --prefix frontend install && npm --prefix frontend run build"
+  publish = "frontend/dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Para probar en local con: netlify dev
+[dev]
+  command = "npm --prefix frontend run dev"
+  targetPort = 5173
+  port = 8888
+  framework = "#custom"
