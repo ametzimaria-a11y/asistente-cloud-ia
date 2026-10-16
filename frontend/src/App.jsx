@@ -26,9 +26,15 @@ async function pedirJSON(url, opciones) {
   try {
     data = await res.json();
   } catch {
-    throw new Error("No fue posible consultar el servicio Cloud.");
+    const err = new Error("No fue posible consultar el servicio Cloud.");
+    err.status = res.status;
+    throw err;
   }
-  if (!res.ok) throw new Error(data?.error || "El asistente no pudo procesar la solicitud.");
+  if (!res.ok) {
+    const err = new Error(data?.error || "El asistente no pudo procesar la solicitud.");
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -77,6 +83,8 @@ export default function App() {
       .then((data) => setProductos(data.productos || []))
       .catch((e) => setErrorCatalogo(e.message));
     cargarEstadisticas();
+    // Despertar la función del asistente para que la primera consulta sea rápida
+    fetch(`${API}/asistente`).catch(() => {});
   }, []);
 
   const categorias = [...new Set(productos.map((p) => p.categoria).filter(Boolean))];
@@ -94,17 +102,26 @@ export default function App() {
     setRespuesta("");
     setMeta(null);
 
+    const solicitud = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pregunta,
+        presupuesto: presupuesto ? Number(presupuesto) : null,
+        categoria,
+        necesidad,
+      }),
+    };
+
     try {
-      const data = await pedirJSON(`${API}/asistente`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pregunta,
-          presupuesto: presupuesto ? Number(presupuesto) : null,
-          categoria,
-          necesidad,
-        }),
-      });
+      let data;
+      try {
+        data = await pedirJSON(`${API}/asistente`, solicitud);
+      } catch (err) {
+        // Si el servidor estaba "dormido" (arranque en frío), se reintenta una vez
+        if (err.status >= 500) data = await pedirJSON(`${API}/asistente`, solicitud);
+        else throw err;
+      }
 
       if (!data.respuesta) {
         setError("El asistente no encontró resultados para tu consulta.");

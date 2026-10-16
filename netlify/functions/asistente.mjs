@@ -54,6 +54,18 @@ const LIMITE_TOTAL_MS = 9500; // Netlify corta la función a los 10 s
 
 export default async (req, context) => {
   const inicio = Date.now();
+
+  // Precalentamiento: la página llama con GET al abrirse para "despertar"
+  // esta función y Google Sheets, y deja el catálogo en memoria.
+  if (req.method === "GET") {
+    try {
+      const productos = await obtenerProductos({ tiempoMs: 9000 });
+      return Response.json({ listo: true, productos: productos.length });
+    } catch {
+      return Response.json({ listo: false });
+    }
+  }
+
   if (req.method !== "POST") return error("Usa el método POST para consultar al asistente.", 405);
 
   // 1. Recibir la pregunta
