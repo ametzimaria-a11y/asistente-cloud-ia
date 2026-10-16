@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 
 const API = "/.netlify/functions";
 
+// El asistente se consulta por la Edge Function (sin el límite de 10 s de las Netlify Functions)
+const ASISTENTE = "/api/asistente";
+
 const EJEMPLOS = [
   "Necesito una laptop para programación con un presupuesto de 20000 pesos.",
   "¿Qué producto tiene mayor capacidad de almacenamiento?",
@@ -116,7 +119,7 @@ export default function App() {
     try {
       let data;
       try {
-        data = await pedirJSON(`${API}/asistente`, solicitud);
+        data = await pedirJSON(`${API}/ASISTENTE`, solicitud);
       } catch (err) {
         // Si el servidor estaba "dormido" (arranque en frío), se reintenta una vez
         if (err.status >= 500) data = await pedirJSON(`${API}/asistente`, solicitud);

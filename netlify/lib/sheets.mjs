@@ -1,5 +1,6 @@
 // Comunicación con Google Sheets a través del script de Apps Script (aplicación web).
 // La URL y el token viven en variables de entorno del servidor, nunca en el frontend.
+import { env } from "./env.mjs";
 
 export const normalizar = (texto) =>
   String(texto ?? "")
@@ -9,8 +10,8 @@ export const normalizar = (texto) =>
     .toLowerCase();
 
 function configuracion() {
-  const url = process.env.SHEETS_API_URL;
-  const token = process.env.SHEETS_TOKEN;
+  const url = env("SHEETS_API_URL");
+  const token = env("SHEETS_TOKEN");
   if (!url || !token) {
     throw new Error("Faltan las variables de entorno SHEETS_API_URL o SHEETS_TOKEN.");
   }

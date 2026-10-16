@@ -1,8 +1,9 @@
 // Servicio de Inteligencia Artificial mediante API.
 // Por defecto usa Google Gemini (tiene nivel gratuito). También admite OpenAI.
 // La API Key se lee de variables de entorno del servidor.
+import { env } from "./env.mjs";
 
-const TIEMPO_MAXIMO_MS = 8500; // Netlify corta las funciones a los 10 s
+const TIEMPO_MAXIMO_MS = 8500;
 
 // Si un modelo ya no está disponible (HTTP 404) se prueba el siguiente.
 const MODELOS_GEMINI = [
@@ -14,16 +15,16 @@ const MODELOS_GEMINI = [
 ];
 
 export async function generarRespuesta({ sistema, usuario }, tiempoMs = TIEMPO_MAXIMO_MS) {
-  const proveedor = (process.env.AI_PROVIDER || "gemini").toLowerCase();
+  const proveedor = (env("AI_PROVIDER") || "gemini").toLowerCase();
   if (proveedor === "openai") return conOpenAI({ sistema, usuario }, tiempoMs);
   return conGemini({ sistema, usuario }, tiempoMs);
 }
 
 async function conGemini({ sistema, usuario }, tiempoMs) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = env("GEMINI_API_KEY");
   if (!apiKey) throw new Error("Falta la variable de entorno GEMINI_API_KEY.");
 
-  const modelos = [...new Set([process.env.GEMINI_MODEL, ...MODELOS_GEMINI].filter(Boolean))];
+  const modelos = [...new Set([env("GEMINI_MODEL"), ...MODELOS_GEMINI].filter(Boolean))];
   const limite = Date.now() + tiempoMs;
   let ultimoError;
 
@@ -39,7 +40,7 @@ async function conGemini({ sistema, usuario }, tiempoMs) {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: sistema }] },
           contents: [{ role: "user", parts: [{ text: usuario }] }],
-          generationConfig: { temperature: 0.3 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 600 },
         }),
         signal: AbortSignal.timeout(restante),
       }
@@ -67,9 +68,9 @@ async function conGemini({ sistema, usuario }, tiempoMs) {
 }
 
 async function conOpenAI({ sistema, usuario }, tiempoMs) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = env("OPENAI_API_KEY");
   if (!apiKey) throw new Error("Falta la variable de entorno OPENAI_API_KEY.");
-  const modelo = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+  const modelo = env("OPENAI_MODEL") || "gpt-4.1-mini";
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
